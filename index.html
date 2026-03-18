@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Fan Lane Rhythm Game</title>
+<title>Radial Rhythm Game</title>
 
 <style>
 body{
@@ -14,40 +14,29 @@ body{
 
 #game{
     position:relative;
-    width:420px;
-    height:650px;
+    width:500px;
+    height:700px;
     margin:auto;
+    background:radial-gradient(circle at center 120%, #222, #000);
     overflow:hidden;
-    perspective:600px;
-    background:linear-gradient(#222,#000);
     border:3px solid white;
-}
-
-.lane{
-    position:absolute;
-    bottom:0;
-    width:20%;
-    height:100%;
-    border-left:1px solid #444;
-    border-right:1px solid #444;
 }
 
 .note{
     position:absolute;
-    width:70px;
-    height:22px;
-    background:#ff7ad9;
-    border-radius:12px;
-    transform-origin:center;
+    width:26px;
+    height:26px;
+    background:#ffe066;
+    border-radius:50%;
+    box-shadow:0 0 10px #fff;
 }
 
-#judgeLine{
+.target{
     position:absolute;
-    bottom:70px;
-    width:100%;
-    height:6px;
-    background:yellow;
-    z-index:5;
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    border:4px solid #4de1ff;
 }
 
 #score{
@@ -59,91 +48,108 @@ body{
 
 <body>
 
-<h1>🎵 Fan Lane Rhythm Game</h1>
-<p>キー：D F J K L</p>
+<h1>🎵 Radial Rhythm 🎵</h1>
+<p>キー：A S D F G H J K L</p>
 <div id="score">Score:0</div>
 
-<div id="game">
-<div id="judgeLine"></div>
-</div>
+<div id="game"></div>
 
 <script>
 const game = document.getElementById("game")
 const scoreText = document.getElementById("score")
 
+const centerX = 250
+const centerY = 120   // 音符位置（発射点）
+
+const radius = 260    // 判定円の半径
+const lanes = 9
+
 let notes=[]
 let score=0
 
-const lanes=5
-const centerX=210
+// 判定サークル生成
+let laneAngles=[]
 
+for(let i=0;i<lanes;i++){
+
+    const angle = (-80 + i*20) * Math.PI/180
+    laneAngles.push(angle)
+
+    const x = centerX + Math.cos(angle)*radius
+    const y = centerY + Math.sin(angle)*radius
+
+    const t = document.createElement("div")
+    t.className="target"
+    t.style.left = (x-35)+"px"
+    t.style.top  = (y-35)+"px"
+
+    game.appendChild(t)
+}
+
+// ノーツ生成
 function spawnNote(){
-    const lane=Math.floor(Math.random()*lanes)
 
-    const note=document.createElement("div")
-    note.classList.add("note")
+    const lane = Math.floor(Math.random()*lanes)
 
-    note.dataset.lane=lane
-    note.dataset.y=0
+    const note = document.createElement("div")
+    note.className="note"
+
+    note.dataset.lane = lane
+    note.dataset.r = 0
 
     game.appendChild(note)
     notes.push(note)
 }
 
+// 更新
 function update(){
 
     notes.forEach((note,index)=>{
 
-        let y=parseFloat(note.dataset.y)
-        y+=3
-        note.dataset.y=y
+        let r = parseFloat(note.dataset.r)
+        r += 4
+        note.dataset.r = r
 
-        // 扇形計算
-        const progress=y/600
+        const angle = laneAngles[note.dataset.lane]
 
-        const scale=1.6-(progress*0.9)
+        const x = centerX + Math.cos(angle)*r
+        const y = centerY + Math.sin(angle)*r
 
-        const laneSpread=160-(progress*120)
+        note.style.left = (x-13)+"px"
+        note.style.top  = (y-13)+"px"
 
-        const x=centerX+(lane-2)*(laneSpread)
-
-        note.style.top=y+"px"
-        note.style.left=x+"px"
-
-        note.style.transform=
-            `translateX(-50%) scale(${scale})`
-
-        if(y>650){
+        // 判定範囲
+        if(r > radius+40){
             note.remove()
             notes.splice(index,1)
         }
     })
 }
 
-function judge(laneKey){
+// 判定
+const keys = ["a","s","d","f","g","h","j","k","l"]
+
+document.addEventListener("keydown",(e)=>{
+
+    const lane = keys.indexOf(e.key)
+    if(lane===-1) return
 
     notes.forEach((note,index)=>{
-        const lane=parseInt(note.dataset.lane)
-        const y=parseFloat(note.dataset.y)
 
-        if(lane===laneKey && y>520 && y<590){
-            score+=100
+        if(parseInt(note.dataset.lane)!==lane) return
+
+        const r = parseFloat(note.dataset.r)
+
+        if(Math.abs(r-radius) < 25){
+            score += 100
             scoreText.textContent="Score:"+score
             note.remove()
             notes.splice(index,1)
         }
     })
-}
-
-document.addEventListener("keydown",(e)=>{
-    if(e.key==="d") judge(0)
-    if(e.key==="f") judge(1)
-    if(e.key==="j") judge(2)
-    if(e.key==="k") judge(3)
-    if(e.key==="l") judge(4)
 })
 
-setInterval(spawnNote,700)
+setInterval(spawnNote,600)
 setInterval(update,16)
 
 </script>
