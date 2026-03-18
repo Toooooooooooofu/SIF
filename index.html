@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Simple Rhythm Game</title>
+<style>
+    body {
+        background: #111;
+        color: white;
+        text-align: center;
+        font-family: sans-serif;
+    }
+
+    #game {
+        position: relative;
+        width: 400px;
+        height: 600px;
+        margin: auto;
+        background: linear-gradient(#222, #000);
+        border: 3px solid #fff;
+        overflow: hidden;
+    }
+
+    .lane {
+        position: absolute;
+        bottom: 0;
+        width: 20%;
+        height: 100%;
+        border-left: 1px solid #444;
+        border-right: 1px solid #444;
+    }
+
+    .note {
+        position: absolute;
+        width: 70px;
+        height: 20px;
+        background: pink;
+        border-radius: 10px;
+    }
+
+    #judgeLine {
+        position: absolute;
+        bottom: 50px;
+        width: 100%;
+        height: 5px;
+        background: yellow;
+    }
+
+    #score {
+        font-size: 24px;
+        margin: 10px;
+    }
+</style>
+</head>
+<body>
+
+<h1>🎵 Rhythm Game 🎵</h1>
+<p>キー：D F J K L</p>
+<div id="score">Score: 0</div>
+
+<div id="game">
+    <div id="judgeLine"></div>
+</div>
+
+<script>
+const game = document.getElementById("game");
+const scoreText = document.getElementById("score");
+
+let score = 0;
+let notes = [];
+
+const lanes = 5;
+const laneWidth = 400 / lanes;
+
+function spawnNote() {
+    const lane = Math.floor(Math.random() * lanes);
+    const note = document.createElement("div");
+    note.classList.add("note");
+    note.style.left = lane * laneWidth + 5 + "px";
+    note.style.top = "-20px";
+    note.dataset.lane = lane;
+
+    game.appendChild(note);
+    notes.push(note);
+}
+
+function update() {
+    notes.forEach((note, index) => {
+        let top = parseFloat(note.style.top);
+        top += 4;
+        note.style.top = top + "px";
+
+        if (top > 600) {
+            note.remove();
+            notes.splice(index, 1);
+        }
+    });
+}
+
+function judge(laneKey) {
+    notes.forEach((note, index) => {
+        const lane = parseInt(note.dataset.lane);
+        const top = parseFloat(note.style.top);
+
+        if (lane === laneKey && top > 500 && top < 560) {
+            score += 100;
+            scoreText.textContent = "Score: " + score;
+            note.remove();
+            notes.splice(index, 1);
+        }
+    });
+}
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "d") judge(0);
+    if (e.key === "f") judge(1);
+    if (e.key === "j") judge(2);
+    if (e.key === "k") judge(3);
+    if (e.key === "l") judge(4);
+});
+
+setInterval(spawnNote, 800);
+setInterval(update, 16);
+</script>
+
+</body>
+</html>
