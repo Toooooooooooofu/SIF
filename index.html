@@ -1,156 +1,126 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>Radial Rhythm Rotate Fix</title>
-
-<style>
-body{
-    background:#000;
-    color:white;
-    text-align:center;
-    font-family:sans-serif;
-}
-
-#game{
-    position:relative;
-    width:420px;
-    height:720px;
-    margin:auto;
-    background:radial-gradient(circle at center 900px,#222,#000);
-    overflow:hidden;
-    border:4px solid white;
-}
-
-.note{
-    position:absolute;
-    width:26px;
-    height:26px;
-    background:#ffe066;
-    border-radius:50%;
-    box-shadow:0 0 12px #fff;
-}
-
-.target{
-    position:absolute;
-    width:64px;
-    height:64px;
-    border-radius:50%;
-    border:4px solid #4de1ff;
-}
-
-#score{
-    font-size:24px;
-    margin:10px;
-}
-</style>
+    <meta charset="UTF-8">
+    <title>SIF Style Rhythm Game</title>
+    <style>
+        body { background: #222; color: white; text-align: center; font-family: sans-serif; overflow: hidden; }
+        #game-container { position: relative; width: 600px; height: 400px; margin: 50px auto; border: 2px solid #555; background: #000; }
+        .target { 
+            position: absolute; width: 60px; height: 60px; 
+            border: 3px solid #ff69b4; border-radius: 50%; 
+            transform: translate(-50%, -50%); 
+        }
+        .note { 
+            position: absolute; width: 40px; height: 40px; 
+            background: radial-gradient(circle, #fff, #ff69b4); 
+            border-radius: 50%; transform: translate(-50%, -50%); 
+        }
+        #score { font-size: 24px; margin-top: 10px; }
+        .combo-text { position: absolute; top: 40%; left: 50%; transform: translateX(-50%); font-size: 30px; color: #f0f; }
+    </style>
 </head>
-
 <body>
-
-<h1>🎵 Radial Rhythm 🎵</h1>
-<p>キー：A S D F G H J K L</p>
-<div id="score">Score:0</div>
-
-<div id="game"></div>
+    <h1>SIF Style Rhythm Game</h1>
+    <div id="score">Score: 0</div>
+    <div id="game-container">
+        <div class="combo-text" id="combo"></div>
+    </div>
+    <p>キーボードの <b>A, S, D, F, Space, J, K, L, ;</b> で操作</p>
 
 <script>
-const game = document.getElementById("game")
-const scoreText = document.getElementById("score")
+const container = document.getElementById('game-container');
+const scoreEl = document.getElementById('score');
+const comboEl = document.getElementById('combo');
+let score = 0;
+let combo = 0;
 
-// ⭐ 発射位置（上中央）
-const centerX = 210
-const centerY = 100
+// スクフェス風の9つのボタン位置（半円状）
+const keys = ['A', 'S', 'D', 'F', ' ', 'J', 'K', 'L', ';'];
+const centerX = 300, centerY = 50; // ノーツの出現点（中央上部）
+const radius = 280; // 半円の半径
+const targets = [];
 
-// ⭐ 判定円半径（画面内）
-const radius = 520
+// ターゲットの生成
+keys.forEach((key, i) => {
+    const angle = Math.PI * (1.1 - (i * 0.15)); // 角度計算
+    const tx = centerX + Math.cos(angle) * radius;
+    const ty = centerY + Math.sin(angle) * radius;
+    
+    const div = document.createElement('div');
+    div.className = 'target';
+    div.style.left = tx + 'px';
+    div.style.top = ty + 'px';
+    div.innerText = key === ' ' ? 'SPC' : key;
+    div.style.fontSize = '12px';
+    div.style.lineHeight = '60px';
+    container.appendChild(div);
+    targets.push({ x: tx, y: ty, key: key.toUpperCase() });
+});
 
-const lanes = 9
-let notes=[]
-let score=0
-let laneAngles=[]
-
-// ⭐★★ここが180度回転★★
-// 以前 110〜174 → 今は 290〜354
-for(let i=0;i<lanes;i++){
-
-    const angle = (290 + i*8) * Math.PI/180
-    laneAngles.push(angle)
-
-    const x = centerX + Math.cos(angle)*radius
-    const y = centerY + Math.sin(angle)*radius
-
-    const t = document.createElement("div")
-    t.className="target"
-    t.style.left = (x-32)+"px"
-    t.style.top  = (y-32)+"px"
-
-    game.appendChild(t)
+let notes = [];
+function spawnNote() {
+    const targetIdx = Math.floor(Math.random() * 9);
+    const target = targets[targetIdx];
+    const noteDiv = document.createElement('div');
+    noteDiv.className = 'note';
+    container.appendChild(noteDiv);
+    
+    notes.push({
+        el: noteDiv,
+        targetIdx: targetIdx,
+        progress: 0,
+        speed: 0.01 + (Math.random() * 0.005)
+    });
 }
 
-function spawnNote(){
+function update() {
+    notes.forEach((note, index) => {
+        note.progress += note.speed;
+        const target = targets[note.targetIdx];
+        
+        // 中央からターゲットへ直線移動
+        const curX = centerX + (target.x - centerX) * note.progress;
+        const curY = centerY + (target.y - centerY) * note.progress;
+        
+        note.el.style.left = curX + 'px';
+        note.el.style.top = curY + 'px';
+        // サイズも徐々に大きくする
+        note.el.style.width = (20 + 40 * note.progress) + 'px';
+        note.el.style.height = (20 + 40 * note.progress) + 'px';
 
-    const lane = Math.floor(Math.random()*lanes)
-
-    const note = document.createElement("div")
-    note.className="note"
-
-    note.dataset.lane = lane
-    note.dataset.r = 0
-
-    game.appendChild(note)
-    notes.push(note)
-}
-
-function update(){
-
-    notes.forEach((note,index)=>{
-
-        let r = parseFloat(note.dataset.r)
-        r += 4   // ⭐ 下方向へ進む
-        note.dataset.r = r
-
-        const angle = laneAngles[note.dataset.lane]
-
-        const x = centerX + Math.cos(angle)*r
-        const y = centerY + Math.sin(angle)*r
-
-        note.style.left = (x-13)+"px"
-        note.style.top  = (y-13)+"px"
-
-        if(r > radius+40){
-            note.remove()
-            notes.splice(index,1)
+        if (note.progress >= 1.1) { // 画面外
+            note.el.remove();
+            notes.splice(index, 1);
+            combo = 0;
+            comboEl.innerText = "";
         }
-    })
+    });
+    requestAnimationFrame(update);
 }
 
-const keys = ["a","s","d","f","g","h","j","k","l"]
-
-document.addEventListener("keydown",(e)=>{
-
-    const lane = keys.indexOf(e.key)
-    if(lane===-1) return
-
-    notes.forEach((note,index)=>{
-
-        if(parseInt(note.dataset.lane)!==lane) return
-
-        const r = parseFloat(note.dataset.r)
-
-        if(Math.abs(r-radius) < 35){
-            score += 100
-            scoreText.textContent="Score:"+score
-            note.remove()
-            notes.splice(index,1)
+// キー入力判定
+window.addEventListener('keydown', (e) => {
+    const pressedKey = e.key.toUpperCase() === ' ' ? ' ' : e.key.toUpperCase();
+    notes.forEach((note, index) => {
+        const target = targets[note.targetIdx];
+        if (target.key === pressedKey) {
+            // 判定幅（progressが0.9〜1.1の間ならヒット）
+            if (note.progress > 0.85 && note.progress < 1.1) {
+                score += 100;
+                combo++;
+                scoreEl.innerText = `Score: ${score}`;
+                comboEl.innerText = `${combo} COMBO`;
+                note.el.remove();
+                notes.splice(index, 1);
+            }
         }
-    })
-})
+    });
+});
 
-setInterval(spawnNote,600)
-setInterval(update,16)
-
+setInterval(spawnNote, 800);
+update();
 </script>
-
 </body>
 </html>
+
