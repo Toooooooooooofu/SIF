@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>LoveLive Style Rhythm</title>
+<title>Radial Rhythm Vertical</title>
 
 <style>
 body{
@@ -14,18 +14,18 @@ body{
 
 #game{
     position:relative;
-    width:900px;
-    height:520px;
+    width:420px;
+    height:720px;
     margin:auto;
-    background:radial-gradient(circle at center -200px,#222,#000);
+    background:radial-gradient(circle at center -150px,#222,#000);
     overflow:hidden;
     border:4px solid white;
 }
 
 .note{
     position:absolute;
-    width:28px;
-    height:28px;
+    width:26px;
+    height:26px;
     background:#ffe066;
     border-radius:50%;
     box-shadow:0 0 12px #fff;
@@ -33,14 +33,14 @@ body{
 
 .target{
     position:absolute;
-    width:80px;
-    height:80px;
+    width:64px;
+    height:64px;
     border-radius:50%;
-    border:5px solid #4de1ff;
+    border:4px solid #4de1ff;
 }
 
 #score{
-    font-size:26px;
+    font-size:24px;
     margin:10px;
 }
 </style>
@@ -48,7 +48,7 @@ body{
 
 <body>
 
-<h1>🎵 LoveLive Radial Rhythm 🎵</h1>
+<h1>🎵 Radial Rhythm 🎵</h1>
 <p>キー：A S D F G H J K L</p>
 <div id="score">Score:0</div>
 
@@ -58,22 +58,22 @@ body{
 const game = document.getElementById("game")
 const scoreText = document.getElementById("score")
 
-// ⭐ 横長用の中心
-const centerX = 450
-const centerY = 60   // 上中央（音符位置）
+// ⭐ 発射位置（上中央）
+const centerX = 210
+const centerY = 60
 
-const radius = 380
+// ⭐ 判定円の半径（画面内に収まるサイズ）
+const radius = 520
+
 const lanes = 9
-
 let notes=[]
 let score=0
-
 let laneAngles=[]
 
-// ⭐ 下半円になるように調整
+// ⭐ 下半円に配置（ここが重要）
 for(let i=0;i<lanes;i++){
 
-    const angle = (200 + i*17) * Math.PI/180
+    const angle = (110 + i*8) * Math.PI/180
     laneAngles.push(angle)
 
     const x = centerX + Math.cos(angle)*radius
@@ -81,13 +81,14 @@ for(let i=0;i<lanes;i++){
 
     const t = document.createElement("div")
     t.className="target"
-    t.style.left = (x-40)+"px"
-    t.style.top  = (y-40)+"px"
+    t.style.left = (x-32)+"px"
+    t.style.top  = (y-32)+"px"
 
     game.appendChild(t)
 }
 
 function spawnNote(){
+
     const lane = Math.floor(Math.random()*lanes)
 
     const note = document.createElement("div")
@@ -105,7 +106,7 @@ function update(){
     notes.forEach((note,index)=>{
 
         let r = parseFloat(note.dataset.r)
-        r += 5
+        r += 4      // ⭐ 半径が増える＝下へ流れる
         note.dataset.r = r
 
         const angle = laneAngles[note.dataset.lane]
@@ -113,10 +114,10 @@ function update(){
         const x = centerX + Math.cos(angle)*r
         const y = centerY + Math.sin(angle)*r
 
-        note.style.left = (x-14)+"px"
-        note.style.top  = (y-14)+"px"
+        note.style.left = (x-13)+"px"
+        note.style.top  = (y-13)+"px"
 
-        if(r > radius+60){
+        if(r > radius+40){
             note.remove()
             notes.splice(index,1)
         }
@@ -136,7 +137,7 @@ document.addEventListener("keydown",(e)=>{
 
         const r = parseFloat(note.dataset.r)
 
-        if(Math.abs(r-radius) < 40){
+        if(Math.abs(r-radius) < 35){
             score += 100
             scoreText.textContent="Score:"+score
             note.remove()
@@ -145,7 +146,7 @@ document.addEventListener("keydown",(e)=>{
     })
 })
 
-setInterval(spawnNote,550)
+setInterval(spawnNote,600)
 setInterval(update,16)
 
 </script>
