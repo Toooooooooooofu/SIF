@@ -2,125 +2,150 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Simple Rhythm Game</title>
+<title>Fan Lane Rhythm Game</title>
+
 <style>
-    body {
-        background: #111;
-        color: white;
-        text-align: center;
-        font-family: sans-serif;
-    }
+body{
+    background:#000;
+    color:white;
+    text-align:center;
+    font-family:sans-serif;
+}
 
-    #game {
-        position: relative;
-        width: 400px;
-        height: 600px;
-        margin: auto;
-        background: linear-gradient(#222, #000);
-        border: 3px solid #fff;
-        overflow: hidden;
-    }
+#game{
+    position:relative;
+    width:420px;
+    height:650px;
+    margin:auto;
+    overflow:hidden;
+    perspective:600px;
+    background:linear-gradient(#222,#000);
+    border:3px solid white;
+}
 
-    .lane {
-        position: absolute;
-        bottom: 0;
-        width: 20%;
-        height: 100%;
-        border-left: 1px solid #444;
-        border-right: 1px solid #444;
-    }
+.lane{
+    position:absolute;
+    bottom:0;
+    width:20%;
+    height:100%;
+    border-left:1px solid #444;
+    border-right:1px solid #444;
+}
 
-    .note {
-        position: absolute;
-        width: 70px;
-        height: 20px;
-        background: pink;
-        border-radius: 10px;
-    }
+.note{
+    position:absolute;
+    width:70px;
+    height:22px;
+    background:#ff7ad9;
+    border-radius:12px;
+    transform-origin:center;
+}
 
-    #judgeLine {
-        position: absolute;
-        bottom: 50px;
-        width: 100%;
-        height: 5px;
-        background: yellow;
-    }
+#judgeLine{
+    position:absolute;
+    bottom:70px;
+    width:100%;
+    height:6px;
+    background:yellow;
+    z-index:5;
+}
 
-    #score {
-        font-size: 24px;
-        margin: 10px;
-    }
+#score{
+    font-size:24px;
+    margin:10px;
+}
 </style>
 </head>
+
 <body>
 
-<h1>🎵 Rhythm Game 🎵</h1>
+<h1>🎵 Fan Lane Rhythm Game</h1>
 <p>キー：D F J K L</p>
-<div id="score">Score: 0</div>
+<div id="score">Score:0</div>
 
 <div id="game">
-    <div id="judgeLine"></div>
+<div id="judgeLine"></div>
 </div>
 
 <script>
-const game = document.getElementById("game");
-const scoreText = document.getElementById("score");
+const game = document.getElementById("game")
+const scoreText = document.getElementById("score")
 
-let score = 0;
-let notes = [];
+let notes=[]
+let score=0
 
-const lanes = 5;
-const laneWidth = 400 / lanes;
+const lanes=5
+const centerX=210
 
-function spawnNote() {
-    const lane = Math.floor(Math.random() * lanes);
-    const note = document.createElement("div");
-    note.classList.add("note");
-    note.style.left = lane * laneWidth + 5 + "px";
-    note.style.top = "-20px";
-    note.dataset.lane = lane;
+function spawnNote(){
+    const lane=Math.floor(Math.random()*lanes)
 
-    game.appendChild(note);
-    notes.push(note);
+    const note=document.createElement("div")
+    note.classList.add("note")
+
+    note.dataset.lane=lane
+    note.dataset.y=0
+
+    game.appendChild(note)
+    notes.push(note)
 }
 
-function update() {
-    notes.forEach((note, index) => {
-        let top = parseFloat(note.style.top);
-        top += 4;
-        note.style.top = top + "px";
+function update(){
 
-        if (top > 600) {
-            note.remove();
-            notes.splice(index, 1);
+    notes.forEach((note,index)=>{
+
+        let y=parseFloat(note.dataset.y)
+        y+=3
+        note.dataset.y=y
+
+        // 扇形計算
+        const progress=y/600
+
+        const scale=1.6-(progress*0.9)
+
+        const laneSpread=160-(progress*120)
+
+        const x=centerX+(lane-2)*(laneSpread)
+
+        note.style.top=y+"px"
+        note.style.left=x+"px"
+
+        note.style.transform=
+            `translateX(-50%) scale(${scale})`
+
+        if(y>650){
+            note.remove()
+            notes.splice(index,1)
         }
-    });
+    })
 }
 
-function judge(laneKey) {
-    notes.forEach((note, index) => {
-        const lane = parseInt(note.dataset.lane);
-        const top = parseFloat(note.style.top);
+function judge(laneKey){
 
-        if (lane === laneKey && top > 500 && top < 560) {
-            score += 100;
-            scoreText.textContent = "Score: " + score;
-            note.remove();
-            notes.splice(index, 1);
+    notes.forEach((note,index)=>{
+        const lane=parseInt(note.dataset.lane)
+        const y=parseFloat(note.dataset.y)
+
+        if(lane===laneKey && y>520 && y<590){
+            score+=100
+            scoreText.textContent="Score:"+score
+            note.remove()
+            notes.splice(index,1)
         }
-    });
+    })
 }
 
-document.addEventListener("keydown", (e) => {
-    if (e.key === "d") judge(0);
-    if (e.key === "f") judge(1);
-    if (e.key === "j") judge(2);
-    if (e.key === "k") judge(3);
-    if (e.key === "l") judge(4);
-});
+document.addEventListener("keydown",(e)=>{
+    if(e.key==="d") judge(0)
+    if(e.key==="f") judge(1)
+    if(e.key==="j") judge(2)
+    if(e.key==="k") judge(3)
+    if(e.key==="l") judge(4)
+})
 
-setInterval(spawnNote, 800);
-setInterval(update, 16);
+setInterval(spawnNote,700)
+setInterval(update,16)
+
 </script>
 
 </body>
