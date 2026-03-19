@@ -2,25 +2,24 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>SIF Style Wide - Center Cut-in</title>
+    <title>SIF Style - Transparent Cut-in</title>
     <style>
         body { background: #111; color: white; text-align: center; font-family: 'Arial', sans-serif; overflow: hidden; margin: 0; }
         
-        /* 横長のゲーム画面 (16:9に近い比率) */
+        /* 1. 画面レイアウト */
         #game-container { 
             position: relative; width: 800px; height: 450px; 
             margin: 20px auto; background: radial-gradient(circle, #333, #000); 
             border: 5px solid #ff69b4; border-radius: 15px; overflow: hidden; 
         }
 
-        /* ターゲット：見切れないように位置調整 */
+        /* 2. ターゲットとノーツ */
         .target { 
             position: absolute; width: 70px; height: 70px; 
             border: 3px solid rgba(255,182,193,0.8); border-radius: 50%; 
             transform: translate(-50%, -50%); color: #fff; font-weight: bold; 
             display: flex; align-items: center; justify-content: center; z-index: 5;
         }
-
         .note { 
             position: absolute; width: 45px; height: 45px; 
             background: radial-gradient(circle, #fff, #ff1493); 
@@ -28,29 +27,34 @@
             box-shadow: 0 0 15px #ff69b4; z-index: 10;
         }
 
-        /* スコアとコンボ */
+        /* 3. UI表示 */
         #score-board { position: absolute; top: 10px; width: 100%; font-size: 24px; text-shadow: 2px 2px 4px #000; z-index: 20; }
         #combo-count { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             font-size: 48px; color: #ffeb3b; font-weight: bold; opacity: 0; pointer-events: none; z-index: 15;
         }
 
-        /* ★中央カットイン演出 */
+        /* ★ここが修正後の「透過カットイン」演出 */
         #cutin-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0); transition: background 0.3s; z-index: 25; pointer-events: none;
             display: flex; align-items: center; justify-content: center;
         }
         #cutin-card {
-            width: 300px; height: 180px; background: linear-gradient(135deg, #ff69b4, #ff1493);
-            border: 5px solid #fff; border-radius: 20px; color: white;
+            width: 350px; height: 200px; 
+            /* 背景を半透明(0.7)にして、ノーツが見えるように設定 */
+            background: linear-gradient(135deg, rgba(255,105,180,0.7), rgba(255,20,147,0.7));
+            border: 4px solid rgba(255, 255, 255, 0.8); 
+            border-radius: 20px; color: white;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transform: scale(0) rotate(-10deg); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 0 50px rgba(255,20,147,0.8);
+            transform: scale(0) rotate(-5deg); opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 30px rgba(255,20,147,0.5);
+            backdrop-filter: blur(4px); /* 背後を少しぼかす */
         }
-        /* カットイン有効時 */
-        .cutin-active #cutin-overlay { background: rgba(0,0,0,0.4); }
-        .cutin-active #cutin-card { transform: scale(1.2) rotate(0deg); }
+        /* カットイン有効時のスタイル */
+        .cutin-active #cutin-overlay { background: rgba(0,0,0,0.15); } /* 暗転も控えめに */
+        .cutin-active #cutin-card { transform: scale(1.1) rotate(0deg); opacity: 0.9; }
 
         #bonus-msg { font-size: 18px; color: #ffeb3b; margin-top: 5px; }
     </style>
@@ -61,7 +65,6 @@
         <div id="score-board">SCORE: <span id="score-val">0</span> <span id="mult-label" style="color:#ffeb3b; display:none;">x1.5!</span></div>
         <div id="combo-count">0</div>
         
-        <!-- 中央カットイン -->
         <div id="cutin-overlay">
             <div id="cutin-card">
                 <div style="font-size: 32px;">FEVER TIME!</div>
@@ -73,28 +76,25 @@
     <p>キー: A, S, D, F, Space, J, K, L, ;</p>
 
 <script>
+/* JavaScript部分は前回のロジックと同じです */
 const container = document.getElementById('game-container');
 const scoreVal = document.getElementById('score-val');
 const comboEl = document.getElementById('combo-count');
 const multLabel = document.getElementById('mult-label');
-const body = document.body;
 
 let score = 0;
 let combo = 0;
 let multiplier = 1.0;
 let notes = [];
 
-// 横長画面に合わせて座標調整 (centerX=400, centerY=60)
 const keys = ['A', 'S', 'D', 'F', ' ', 'J', 'K', 'L', ';'];
 const centerX = 400, centerY = 60, radiusX = 350, radiusY = 320;
 const targets = [];
 
-// ターゲットの配置（横長の楕円軌道に微調整）
 keys.forEach((key, i) => {
     const angle = Math.PI * (1.05 - (i * 0.137)); 
     const tx = centerX + Math.cos(angle) * radiusX;
     const ty = centerY + Math.sin(angle) * radiusY;
-    
     const div = document.createElement('div');
     div.className = 'target';
     div.style.left = tx + 'px';
@@ -108,7 +108,6 @@ function triggerCutIn() {
     multiplier = 1.5;
     multLabel.style.display = 'inline';
     container.classList.add('cutin-active');
-    
     setTimeout(() => {
         container.classList.remove('cutin-active');
         multiplier = 1.0;
@@ -132,7 +131,6 @@ function update() {
         note.el.style.left = (centerX + (target.x - centerX) * note.progress) + 'px';
         note.el.style.top = (centerY + (target.y - centerY) * note.progress) + 'px';
         note.el.style.transform = `translate(-50%, -50%) scale(${0.3 + note.progress * 1.2})`;
-
         if (note.progress >= 1.05) {
             note.el.remove();
             notes.splice(index, 1);
@@ -146,50 +144,18 @@ function update() {
 window.addEventListener('keydown', (e) => {
     const pressedKey = e.key.toUpperCase() === ' ' ? ' ' : e.key.toUpperCase();
     const hitIdx = notes.findIndex(n => targets[n.targetIdx].key === pressedKey && n.progress > 0.88 && n.progress < 1.05);
-    
     if (hitIdx !== -1) {
         const note = notes[hitIdx];
         combo++;
         score += Math.floor(100 * multiplier * (1 + combo * 0.02));
-        
         if (combo > 0 && combo % 10 === 0) triggerCutIn();
-
         scoreVal.innerText = score;
         comboEl.innerText = `${combo} COMBO`;
         comboEl.style.opacity = 1;
-        
         note.el.remove();
         notes.splice(hitIdx, 1);
     }
 });
-/* ★中央カットイン演出（透過・ノーツ可視化） */
-#cutin-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    /* 背景の暗転を少し薄く (0.4 -> 0.25) */
-    background: rgba(0,0,0,0); transition: background 0.3s; z-index: 25; pointer-events: none;
-    display: flex; align-items: center; justify-content: center;
-}
-
-#cutin-card {
-    width: 350px; height: 200px; 
-    /* 背景を半透明に (rgbaの0.85) */
-    background: linear-gradient(135deg, rgba(255,105,180,0.85), rgba(255,20,147,0.85));
-    border: 4px solid rgba(255, 255, 255, 0.9); 
-    border-radius: 20px; color: white;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    /* 初期状態は透明 */
-    transform: scale(0) rotate(-5deg); opacity: 0;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 0 30px rgba(255,20,147,0.5);
-    backdrop-filter: blur(4px); /* 背景を少しぼかして文字を見やすく */
-}
-
-/* カットイン有効時：不透明度を調整してノーツを透かす */
-.cutin-active #cutin-overlay { background: rgba(0,0,0,0.2); }
-.cutin-active #cutin-card { 
-    transform: scale(1.1) rotate(0deg); 
-    opacity: 0.9; /* わずかに透かすことでノーツの通過を確認可能に */
-}
 
 setInterval(spawnNote, 600);
 update();
